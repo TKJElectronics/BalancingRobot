@@ -76,7 +76,7 @@ void setup()
   wheelP = controlP5.addTextfield("wheelP", 10, 100, 40, 20);
   //wheelI = controlP5.addTextfield("wheelI", 55, 100, 40, 20);
   wheelD = controlP5.addTextfield("wheelD", 55, 100, 40, 20);
-  targetPosition = controlP5.addTextfield("Target", 10, 135, 40, 20);
+  targetPosition = controlP5.addTextfield("TargetPosition", 10, 135, 40, 20);
   //rightTargetPosition = controlP5.addTextfield("rightTarget", 100, 135, 40, 20);
 
   wheelP.setAutoClear(false);
@@ -136,7 +136,7 @@ void draw()
   textSize(10);  
   textAlign(LEFT);
   text("P: " + stringP + " I: " + stringI +  " D: " + stringD + " TargetAngle: " + stringTargetAngle, 10, 235); // Motor
-  text("stringWheelP: " + stringWheelP + /*" stringWheelI: " + stringWheelI +*/ " stringWheelD: " + stringWheelD, 10, 255); //Encoders
+  text("WheelP: " + stringWheelP + /*" WheelI: " + stringWheelI +*/ " WheelD: " + stringWheelD, 10, 255); //Encoders
   text("TargetPosition: " + stringTargetPosition /*stringLeftTargetPosition  + " RightTargetPosition: " + stringRightTargetPosition*/, 10, 275);
 }
 void Abort(int theValue)
