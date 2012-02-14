@@ -1,0 +1,8 @@
+The code is released under the GNU General Public License.
+
+This is the code I used to find the proper PID values.
+I used two XBee modules for wireless communication between a Processing (http://processing.org/) application (see the folder "PIDController") and the balancing robot. This enables me to change the PID values wirelessly without needing to reprogram the robot each time.
+
+It really saved me A LOT of time, as it will take a while to find the optimal PID constants.
+
+For more information visit my blog at http://blog.tkjelectronics.dk/ or send me an email at kristianl at tkjelectronics dot dk.
