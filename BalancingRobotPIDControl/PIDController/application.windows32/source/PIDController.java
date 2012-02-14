@@ -359,21 +359,8 @@ public void keyPressed()
   }
   else if (key == CODED)
   {
-    if (keyCode == 16)
-      StoreValues(0);
-    if (connectedSerial)
-    {
-      if (keyCode == LEFT)
-        XBee.write("L");
-      if (keyCode == UP)
-        XBee.write("U");
-      if (keyCode == DOWN)
-        XBee.write("D");
-      if (keyCode == RIGHT)
-        XBee.write("R");
-    }
-    else
-      println("Establish a serial connection first!");
+    if (keyCode == UP)
+      StoreValues(0);   
   }
 }
 public void customize(DropdownList ddl) 
