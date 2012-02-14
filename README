@@ -1,0 +1,7 @@
+The code is released under the GNU General Public License.
+
+This is the code for my balancing robot/segway. It's made for the mbed board, but can easily be ported to other microcontrollers - like the Arduino.
+
+To steer the robot, I use an Arduino with a USB Host Shield on top (http://www.circuitsathome.com/products-page/arduino-shields/usb-host-shield-2-0-for-arduino/) together with my PS3 Controller Bluetooth Library for Arduino (https://github.com/TKJElectronics/USB_Host_Shield_2.0). The code for the remote can be found at my other repository: https://github.com/TKJElectronics/BalancingRobotRemote
+
+For more information visit my blog at http://blog.tkjelectronics.dk/ or send me an email at kristianl at tkjelectronics dot dk.
