@@ -1,3 +1,12 @@
+/* 
+ * The code is released under the GNU General Public License.
+ * Developed by Kristian Lauszus
+ * This is the algorithm for my balancing robot/segway.
+ * It is controlled by a PS3 Controller via bluetooth.
+ * The remote control code can be found at my other github repository: https://github.com/TKJElectronics/BalancingRobot
+ * For details, see http://blog.tkjelectronics.dk
+ */
+
 #include "BalancingRobot.h"
 
 /* Serial communication */
