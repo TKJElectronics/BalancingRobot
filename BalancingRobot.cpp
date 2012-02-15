@@ -1,4 +1,4 @@
-/* 
+/*
  * The code is released under the GNU General Public License.
  * Developed by Kristian Lauszus
  * This is the algorithm for my balancing robot/segway.
@@ -69,61 +69,48 @@ void stopAndReset() {
 }
 void receiveSerial() {
     char input[16]; // The serial buffer is only 16 characters, so the data has to be split up
-    int i = 0;    
+    int i = 0;
     while (ps3.readable()) {
-        input[i] = ps3.getc();   
-        if(input[i] == ';')
+        input[i] = ps3.getc();
+        if (input[i] == ';')
             break;
-        i++;            
-    }    
+        i++;
+    }
     //debug.printf("Input: %s\n",input);
+    
+    // Set all false
+    steerForward = false;
+    steerForwardFull = false;
+    steerBackward = false;
+    steerBackwardFull = false;
+    steerLeft = false;
+    steerRotateLeft = false;
+    steerRight = false;
+    steerRotateRight = false;
     
     /* For remote control */
     if (input[0] == 'F') { // Forward
-        steerForward = true;
-        steerBackward = false;
-        steerLeft = false;
-        steerRotateLeft = false;
-        steerRight = false;
-        steerRotateRight = false;
+        if (input[1] == 'F') // Forward Full            
+            steerForwardFull = true;
+        else
+            steerForward = true;
     } else if (input[0] == 'B') { // Backward
-        steerForward = false;
-        steerBackward = true;
-        steerLeft = false;
-        steerRotateLeft = false;
-        steerRight = false;
-        steerRotateRight = false;
+        if (input[1] == 'F') // Backward Full        
+            steerBackwardFull = true;
+        else
+            steerBackward = true;
     } else if (input[0] == 'L') { // Left
-        if (input[1] == 'R') { // Left Rotate
-            steerLeft = false;
+        if (input[1] == 'R') // Left Rotate            
             steerRotateLeft = true;
-        } else {
+        else
             steerLeft = true;
-            steerRotateLeft = false;
-        }
-        steerForward = false;
-        steerBackward = false;
-        steerRight = false;
-        steerRotateRight = false;
     } else if (input[0] == 'R') { // Right
-        if (input[1] == 'R') { // Right Rotate
-            steerRight = false;
+        if (input[1] == 'R') // Right Rotate            
             steerRotateRight = true;
-        } else {
+        else
             steerRight = true;
-            steerRotateRight = false;
-        }
-        steerForward = false;
-        steerBackward = false;
-        steerLeft = false;
-        steerRotateLeft = false;
     } else if (input[0] == 'S') { // Stop
-        steerForward = false;
-        steerBackward = false;
-        steerLeft = false;
-        steerRotateLeft = false;
-        steerRight = false;
-        steerRotateRight = false;
+        // Everything is allready false
     }
     
     else if (input[0] == 'T') { // Set the target angle
@@ -141,8 +128,12 @@ void receiveSerial() {
 void PID(double restAngle) {
     if (steerForward)
         restAngle -= 1.5;
+    else if (steerForwardFull)
+        restAngle -= 5;
     else if (steerBackward)
         restAngle += 1.5;
+    else if (steerBackwardFull)
+        restAngle += 5;
     
     double error = (restAngle - pitch)/100;
     double pTerm = Kp * error;

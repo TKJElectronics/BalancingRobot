@@ -77,7 +77,9 @@ enum Direction {
 };
 
 bool steerForward;
+bool steerForwardFull;
 bool steerBackward;
+bool steerBackwardFull;
 bool steerLeft;
 bool steerRotateLeft;
 bool steerRight;
