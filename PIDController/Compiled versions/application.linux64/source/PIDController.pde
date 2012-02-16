@@ -113,7 +113,7 @@ void Continue(int theValue)
 {
   if (connectedSerial) 
   {
-    xbee.write("C");
+    xbee.write("C;");
     aborted = false;
   }
   else

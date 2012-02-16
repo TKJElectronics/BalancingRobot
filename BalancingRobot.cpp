@@ -68,8 +68,8 @@ int main() {
 void receivePS3() {
     char input[16]; // The serial buffer is only 16 characters
     int i = 0;
-    while (ps3.readable()) {
-        input[i] = ps3.getc();
+    while (1) {
+        input[i] = ps3.getc(); // keep reading until it reads a semicolon
         if (input[i] == ';')
             break;
         i++;
@@ -87,18 +87,12 @@ void receivePS3() {
     /* For remote control */
     if (input[0] == 'F') { // Forward
         strtok(input, ","); // Ignore 'F'
-        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
-            targetOffset = lastTargetOffset;
-        lastTargetOffset = targetOffset;
+        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
         xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
         steerForward = true;
     } else if (input[0] == 'B') { // Backward
         strtok(input, ","); // Ignore 'B'
         targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
-            targetOffset = lastTargetOffset;
-        lastTargetOffset = targetOffset;
         xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
         steerBackward = true;
     } else if (input[0] == 'L') { // Left
@@ -118,9 +112,6 @@ void receivePS3() {
     else if (input[0] == 'T') { // Set the target angle
         strtok(input, ","); // Ignore 'T'
         targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        if (targetAngle < 75 || targetAngle > 105) // The serial communication sometimes behaves weird
-            targetAngle = lastTargetAngle;
-        lastTargetAngle = targetAngle;
         xbee.printf("%f\n",targetAngle); // Print targetAngle for debugging
     } else if (input[0] == 'A') { // Abort
         stopAndReset();
@@ -130,7 +121,7 @@ void receivePS3() {
 void receiveXbee() {
     char input[16]; // The serial buffer is only 16 characters
     int i = 0;
-    while (1) { // the xbee communication is a bit slower, so it has to keep reading until it reads a ';'
+    while (1) { // keep reading until it reads a semicolon
         input[i] = xbee.getc();
         if (input[i] == ';')
             break;
@@ -140,10 +131,7 @@ void receiveXbee() {
     
     if (input[0] == 'T') { // Set the target angle
         strtok(input, ","); // Ignore 'T'
-        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        if (targetAngle < 75 || targetAngle > 105) // The serial communication sometimes behaves weird
-            targetAngle = lastTargetAngle;
-        lastTargetAngle = targetAngle;        
+        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
     } else if (input[0] == 'P') {
         strtok(input, ",");//Ignore 'P'
         Kp = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
