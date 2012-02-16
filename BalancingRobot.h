@@ -94,7 +94,9 @@ double getAccY();
 void move(Motor motor, Direction direction, float speed);
 void stop(Motor motor);
 void processing();
-void receiveSerial();
+void receivePS3();
+void receiveXbee();
 void stopAndReset();
+void processing();
 
 #endif

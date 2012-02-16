@@ -28,6 +28,7 @@ int main() {
     calibrateSensors(); // Calibrate the gyro and accelerometer relative to ground
     
     xbee.printf("Initialized\n");
+    processing(); // Send output to processing application
     
     // Start timing
     t.start();
@@ -43,9 +44,11 @@ int main() {
         timer = t.read_us();
         
         if (ps3.readable()) // Check if there's any incoming data
-            receiveSerial();
+            receivePS3();
+        if (xbee.readable()) // For setting the PID values
+            receiveXbee();
         
-        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);        
+        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
         
         if (pitch < 75 || pitch > 105) // Stop if falling or laying down
             stopAndReset();
@@ -62,12 +65,7 @@ int main() {
         //debug.printf("%i,%i\n",lastLoopUsefulTime,lastLoopTime);
     }
 }
-void stopAndReset() {
-    stop(both);
-    lastError = 0;
-    iTerm = 0;
-}
-void receiveSerial() {
+void receivePS3() {
     char input[16]; // The serial buffer is only 16 characters
     int i = 0;
     while (ps3.readable()) {
@@ -79,12 +77,12 @@ void receiveSerial() {
     //debug.printf("Input: %s\n",input);
     
     // Set all false
-    steerForward = false;    
-    steerBackward = false;    
+    steerForward = false;
+    steerBackward = false;
     steerLeft = false;
     steerRotateLeft = false;
     steerRight = false;
-    steerRotateRight = false;    
+    steerRotateRight = false;
     
     /* For remote control */
     if (input[0] == 'F') { // Forward
@@ -93,7 +91,7 @@ void receiveSerial() {
         if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
             targetOffset = lastTargetOffset;
         lastTargetOffset = targetOffset;
-        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging  
+        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
         steerForward = true;
     } else if (input[0] == 'B') { // Backward
         strtok(input, ","); // Ignore 'B'
@@ -101,15 +99,15 @@ void receiveSerial() {
         if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
             targetOffset = lastTargetOffset;
         lastTargetOffset = targetOffset;
-        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging        
+        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
         steerBackward = true;
     } else if (input[0] == 'L') { // Left
-        if (input[1] == 'R') // Left Rotate            
+        if (input[1] == 'R') // Left Rotate
             steerRotateLeft = true;
         else
             steerLeft = true;
     } else if (input[0] == 'R') { // Right
-        if (input[1] == 'R') // Right Rotate            
+        if (input[1] == 'R') // Right Rotate
             steerRotateRight = true;
         else
             steerRight = true;
@@ -129,11 +127,47 @@ void receiveSerial() {
         while (ps3.getc() != 'C'); // Wait until continue is send
     }
 }
+void receiveXbee() {
+    char input[16]; // The serial buffer is only 16 characters
+    int i = 0;
+    while (1) { // the xbee communication is a bit slower, so it has to keep reading until it reads a ';'
+        input[i] = xbee.getc();
+        if (input[i] == ';')
+            break;
+        i++;
+    }
+    //debug.printf("Input: %s\n",input);    
+    
+    if (input[0] == 'T') { // Set the target angle
+        strtok(input, ","); // Ignore 'T'
+        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        if (targetAngle < 75 || targetAngle > 105) // The serial communication sometimes behaves weird
+            targetAngle = lastTargetAngle;
+        lastTargetAngle = targetAngle;        
+    } else if (input[0] == 'P') {
+        strtok(input, ",");//Ignore 'P'
+        Kp = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'I') {
+        strtok(input, ",");//Ignore 'I'
+        Ki = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'D') {
+        strtok(input, ",");//Ignore 'D'
+        Kd = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
+    } else if (input[0] == 'A') { // Abort
+        stopAndReset();
+        while (xbee.getc() != 'C'); // Wait until continue is send
+    } else if (input[0] == 'G') // The processing application sends this at startup
+        processing(); // Send output to processing application
+}
+void processing() {
+    /* Send output to processing application */
+    xbee.printf("Processing,%5.2f,%5.2f,%5.2f,%5.2f\n",Kp,Ki,Kd,targetAngle);
+}
 void PID(double restAngle, double offset) {
     if (steerForward)
-        restAngle -= offset;            
+        restAngle -= offset;
     else if (steerBackward)
-        restAngle += offset;            
+        restAngle += offset;
     
     double error = (restAngle - pitch)/100;
     double pTerm = Kp * error;
@@ -174,6 +208,11 @@ void PID(double restAngle, double offset) {
         move(right, forward, PIDRight);
     else
         move(right, backward, PIDRight * -1);
+}
+void stopAndReset() {
+    stop(both);
+    lastError = 0;
+    iTerm = 0;
 }
 double kalman(double newAngle, double newRate, double dtime) {
     // KasBot V2  -  Kalman filter module - http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1284738418 - http://www.x-firm.com/?page_id=145
