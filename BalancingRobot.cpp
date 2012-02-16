@@ -45,12 +45,12 @@ int main() {
         if (ps3.readable()) // Check if there's any incoming data
             receiveSerial();
         
-        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
+        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);        
         
         if (pitch < 75 || pitch > 105) // Stop if falling or laying down
             stopAndReset();
         else
-            PID(targetAngle);
+            PID(targetAngle,targetOffset);
         
         /* Used a time fixed loop */
         lastLoopUsefulTime = t.read_us() - loopStartTime;
@@ -68,7 +68,7 @@ void stopAndReset() {
     iTerm = 0;
 }
 void receiveSerial() {
-    char input[16]; // The serial buffer is only 16 characters, so the data has to be split up
+    char input[16]; // The serial buffer is only 16 characters
     int i = 0;
     while (ps3.readable()) {
         input[i] = ps3.getc();
@@ -79,26 +79,30 @@ void receiveSerial() {
     //debug.printf("Input: %s\n",input);
     
     // Set all false
-    steerForward = false;
-    steerForwardFull = false;
-    steerBackward = false;
-    steerBackwardFull = false;
+    steerForward = false;    
+    steerBackward = false;    
     steerLeft = false;
     steerRotateLeft = false;
     steerRight = false;
-    steerRotateRight = false;
+    steerRotateRight = false;    
     
     /* For remote control */
     if (input[0] == 'F') { // Forward
-        if (input[1] == 'F') // Forward Full            
-            steerForwardFull = true;
-        else
-            steerForward = true;
+        strtok(input, ","); // Ignore 'F'
+        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
+            targetOffset = lastTargetOffset;
+        lastTargetOffset = targetOffset;
+        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging  
+        steerForward = true;
     } else if (input[0] == 'B') { // Backward
-        if (input[1] == 'F') // Backward Full        
-            steerBackwardFull = true;
-        else
-            steerBackward = true;
+        strtok(input, ","); // Ignore 'B'
+        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        if (targetOffset < 0 || targetOffset > 5) // The serial communication sometimes behaves weird
+            targetOffset = lastTargetOffset;
+        lastTargetOffset = targetOffset;
+        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging        
+        steerBackward = true;
     } else if (input[0] == 'L') { // Left
         if (input[1] == 'R') // Left Rotate            
             steerRotateLeft = true;
@@ -125,15 +129,11 @@ void receiveSerial() {
         while (ps3.getc() != 'C'); // Wait until continue is send
     }
 }
-void PID(double restAngle) {
+void PID(double restAngle, double offset) {
     if (steerForward)
-        restAngle -= 1.5;
-    else if (steerForwardFull)
-        restAngle -= 5;
+        restAngle -= offset;            
     else if (steerBackward)
-        restAngle += 1.5;
-    else if (steerBackwardFull)
-        restAngle += 5;
+        restAngle += offset;            
     
     double error = (restAngle - pitch)/100;
     double pTerm = Kp * error;

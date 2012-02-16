@@ -77,16 +77,17 @@ enum Direction {
 };
 
 bool steerForward;
-bool steerForwardFull;
 bool steerBackward;
-bool steerBackwardFull;
 bool steerLeft;
 bool steerRotateLeft;
 bool steerRight;
 bool steerRotateRight;
 
+double targetOffset = 0;
+double lastTargetOffset;
+
 void calibrateSensors();
-void PID(double restAngle);
+void PID(double restAngle, double offset);
 double kalman(double newAngle, double newRate, double looptime);
 double getGyroYrate();
 double getAccY();
