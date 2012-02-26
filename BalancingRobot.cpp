@@ -91,8 +91,12 @@ void PID(double restAngle, double offset) {
         //xbee.printf("Backward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
     } else if (steerStop) {
         long positionError = wheelPosition - targetPosition;
-        if (abs(positionError) > 500)
-            restAngle -= (double)positionError/positionScale;
+        if (abs(positionError) > zoneA) // Inside zone A
+            restAngle -= (double)positionError/positionScaleA;
+        else if (abs(positionError) > zoneB) // Inside zone B
+            restAngle -= (double)positionError/positionScaleB;
+        else // Inside zone C
+            restAngle -= (double)positionError/positionScaleC;
         restAngle -= (double)wheelVelocity/velocityScale;
         
         if (restAngle < 80) // Limit rest Angle

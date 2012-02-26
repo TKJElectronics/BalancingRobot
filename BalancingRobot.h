@@ -85,7 +85,11 @@ long wheelPosition;
 long lastWheelPosition;
 long targetPosition;
 long wheelVelocity;
-double positionScale = 1000; // one resolution is 464 pulses
+int zoneA = 1000;
+int zoneB = 500;
+double positionScaleA = 250; // one resolution is 464 pulses
+double positionScaleB = 500; 
+double positionScaleC = 1000;
 double velocityScale = 40;
 
 void calibrateSensors();
