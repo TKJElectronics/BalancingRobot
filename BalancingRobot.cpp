@@ -91,11 +91,9 @@ void PID(double restAngle, double offset) {
         //xbee.printf("Backward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
     } else if (steerStop) {
         long positionError = wheelPosition - targetPosition;
-        if(abs(positionError) > 500) {
+        if (abs(positionError) > 500)
             restAngle -= (double)positionError/positionScale;
-            restAngle -= (double)wheelVelocity/velocityScale;
-        } else
-            restAngle -= (double)wheelVelocity/(velocityScale*2);
+        restAngle -= (double)wheelVelocity/velocityScale;
         
         if (restAngle < 80) // Limit rest Angle
             restAngle = 80;
@@ -277,7 +275,7 @@ double getGyroYrate() {
     return gyroRate;
 }
 double getAccY() {
-    // (accAdc-accZero)/Sensitivity (In quids) - Sensitivity = 0.33/3.3=0.1    
+    // (accAdc-accZero)/Sensitivity (In quids) - Sensitivity = 0.33/3.3=0.1
     double accXval = (accX.read() - zeroValues[1]) / 0.1;
     double accYval = (accY.read() - zeroValues[2]) / 0.1;
     accYval--;//-1g when lying down
