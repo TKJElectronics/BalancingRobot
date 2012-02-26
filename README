@@ -3,11 +3,11 @@ The code is released under the GNU General Public License.
 This is the code for my balancing robot/segway. It's made for the mbed board, but can easily be ported to other microcontrollers - like the Arduino.
 
 I use a 6DOF IMU from Sparkfun (http://www.sparkfun.com/products/10010), I only use 1 of the gyro axis though.
-For more info about calculating the pitch and the Kalman filter see my post at the Arduino forum: http://arduino.cc/forum/index.php/topic,58048.0.html
+For more info about calculating the pitch and the Kalman filter see my post at the Arduino forum: http://arduino.cc/forum/index.php/topic,58048.0.html.
 
 
-To steer the robot, I use an Arduino with a USB Host Shield on top (http://www.circuitsathome.com/products-page/arduino-shields/usb-host-shield-2-0-for-arduino/) together with my PS3 Controller Bluetooth Library for Arduino (https://github.com/TKJElectronics/USB_Host_Shield_2.0). The code for the remote can be found at my other repository: https://github.com/TKJElectronics/BalancingRobotRemote
+To steer the robot, I use an Arduino with a USB Host Shield on top (http://www.circuitsathome.com/products-page/arduino-shields/usb-host-shield-2-0-for-arduino/) together with my PS3 Controller Bluetooth Library for Arduino (https://github.com/TKJElectronics/USB_Host_Shield_2.0). The code for the remote can be found at my other repository: https://github.com/TKJElectronics/BalancingRobotRemote.
 
-For information about the hardware, see the wiki: https://github.com/TKJElectronics/BalancingRobot/wiki/Hardware
+For information about the hardware, see the wiki: https://github.com/TKJElectronics/BalancingRobot/wiki/Hardware.
 
-For more information visit my blog at http://blog.tkjelectronics.dk/ or send me an email at kristianl at tkjelectronics dot dk.
+For more information see my blog post at http://blog.tkjelectronics.dk/2012/02/the-balancing-robot/ or send me an email at kristianl at tkjelectronics dot dk.

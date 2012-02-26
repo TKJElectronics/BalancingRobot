@@ -146,10 +146,10 @@ public void Submit(int theValue)
   if (connectedSerial)
   {    
     println("PID values: " + P.getText() + " " + I.getText() + " " + D.getText() +  " TargetAnlge: " + targetAngle.getText());
-    String output1 = "T," + targetAngle.getText() + ';';
-    String output2 = "P," + P.getText() + ';';
-    String output3 = "I," + I.getText() + ';';
-    String output4 = "D," + D.getText() + ';';
+    String output1 = "P," + P.getText() + ';';
+    String output2 = "I," + I.getText() + ';';
+    String output3 = "D," + D.getText() + ';';
+    String output4 = "T," + targetAngle.getText() + ';';
 
     xbee.write(output1);
     delay(10);
@@ -194,20 +194,20 @@ public void serialEvent(Serial xbee)
     println("Started");
   else if(input[0].equals("Processing"))
   {    
-    if (input[1].length() > 6)
-      stringP = input[1].substring(0, 6);
+    if (input[1].length() > 5)
+      stringP = input[1].substring(0, 5);
     else
       stringP = input[1];
-    if (input[2].length() > 6)
-      stringI = input[2].substring(0, 6);
+    if (input[2].length() > 5)
+      stringI = input[2].substring(0, 5);
     else
       stringI = input[2];
-    if (input[3].length() > 6)
-      stringD = input[3].substring(0, 6);
+    if (input[3].length() > 5)
+      stringD = input[3].substring(0, 5);
     else
       stringD = input[3];
-    if (input[4].length() > 6)
-      stringTargetAngle = input[4].substring(0, 6);
+    if (input[4].length() > 5)
+      stringTargetAngle = input[4].substring(0, 5);
     else
       stringTargetAngle = input[4];
   }

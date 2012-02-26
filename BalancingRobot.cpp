@@ -4,15 +4,21 @@
  * This is the algorithm for my balancing robot/segway.
  * It is controlled by a PS3 Controller via bluetooth.
  * The remote control code can be found at my other github repository: https://github.com/TKJElectronics/BalancingRobot
- * For details, see http://blog.tkjelectronics.dk
+ * For details, see http://blog.tkjelectronics.dk/2012/02/the-balancing-robot/
  */
 
+#include "mbed.h"
 #include "BalancingRobot.h"
+#include "Encoder.h"
 
 /* Serial communication */
 Serial xbee(p13,p14); // For wireless debugging
 Serial ps3(p9,p10); // For remote control
 Serial debug(USBTX, USBRX); // USB
+
+/* Setup encoders */
+Encoder leftEncoder(p29,p30);
+Encoder rightEncoder(p28,p27);
 
 /* Timer instance */
 Timer t;
@@ -22,7 +28,7 @@ int main() {
     ps3.baud(115200);
     debug.baud(115200);
     
-    leftPWM.period(0.00005); //The motor driver can handle pwm values up to 20kHz (1/20000=0.00005)
+    leftPWM.period(0.00005); // The motor driver can handle a pwm frequency up to 20kHz (1/20000=0.00005)
     rightPWM.period(0.00005);
     
     calibrateSensors(); // Calibrate the gyro and accelerometer relative to ground
@@ -43,17 +49,26 @@ int main() {
         pitch = kalman(accYangle, gyroYrate, t.read_us() - timer); // calculate the angle using a Kalman filter
         timer = t.read_us();
         
+        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
+        
         if (ps3.readable()) // Check if there's any incoming data
             receivePS3();
         if (xbee.readable()) // For setting the PID values
             receiveXbee();
         
-        //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
-        
-        if (pitch < 75 || pitch > 105) // Stop if falling or laying down
+        if (pitch < 70 || pitch > 110) // Stop if falling or laying down
             stopAndReset();
         else
             PID(targetAngle,targetOffset);
+        
+        loopCounter++;
+        if (loopCounter == 10) { // Update wheel velocity every 100ms
+            loopCounter = 0;
+            wheelPosition = leftEncoder.read() + rightEncoder.read();
+            wheelVelocity = wheelPosition - lastWheelPosition;
+            lastWheelPosition = wheelPosition;
+            //xbee.printf("WheelVelocity: %i\n",wheelVelocity);
+        }
         
         /* Used a time fixed loop */
         lastLoopUsefulTime = t.read_us() - loopStartTime;
@@ -65,98 +80,29 @@ int main() {
         //debug.printf("%i,%i\n",lastLoopUsefulTime,lastLoopTime);
     }
 }
-void receivePS3() {
-    char input[16]; // The serial buffer is only 16 characters
-    int i = 0;
-    while (1) {
-        input[i] = ps3.getc(); // keep reading until it reads a semicolon
-        if (input[i] == ';')
-            break;
-        i++;
-    }
-    //debug.printf("Input: %s\n",input);
-    
-    // Set all false
-    steerForward = false;
-    steerBackward = false;
-    steerLeft = false;
-    steerRotateLeft = false;
-    steerRight = false;
-    steerRotateRight = false;
-    
-    /* For remote control */
-    if (input[0] == 'F') { // Forward
-        strtok(input, ","); // Ignore 'F'
-        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
-        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
-        steerForward = true;
-    } else if (input[0] == 'B') { // Backward
-        strtok(input, ","); // Ignore 'B'
-        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
-        steerBackward = true;
-    } else if (input[0] == 'L') { // Left
-        if (input[1] == 'R') // Left Rotate
-            steerRotateLeft = true;
-        else
-            steerLeft = true;
-    } else if (input[0] == 'R') { // Right
-        if (input[1] == 'R') // Right Rotate
-            steerRotateRight = true;
-        else
-            steerRight = true;
-    } else if (input[0] == 'S') { // Stop
-        // Everything is allready false
-    }
-    
-    else if (input[0] == 'T') { // Set the target angle
-        strtok(input, ","); // Ignore 'T'
-        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-        xbee.printf("%f\n",targetAngle); // Print targetAngle for debugging
-    } else if (input[0] == 'A') { // Abort
-        stopAndReset();
-        while (ps3.getc() != 'C'); // Wait until continue is send
-    }
-}
-void receiveXbee() {
-    char input[16]; // The serial buffer is only 16 characters
-    int i = 0;
-    while (1) { // keep reading until it reads a semicolon
-        input[i] = xbee.getc();
-        if (input[i] == ';')
-            break;
-        i++;
-    }
-    //debug.printf("Input: %s\n",input);    
-    
-    if (input[0] == 'T') { // Set the target angle
-        strtok(input, ","); // Ignore 'T'
-        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
-    } else if (input[0] == 'P') {
-        strtok(input, ",");//Ignore 'P'
-        Kp = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-    } else if (input[0] == 'I') {
-        strtok(input, ",");//Ignore 'I'
-        Ki = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
-    } else if (input[0] == 'D') {
-        strtok(input, ",");//Ignore 'D'
-        Kd = atof(strtok(NULL, ";")); // read until the end and then convert from string to double        
-    } else if (input[0] == 'A') { // Abort
-        stopAndReset();
-        while (xbee.getc() != 'C'); // Wait until continue is send
-    } else if (input[0] == 'G') // The processing application sends this at startup
-        processing(); // Send output to processing application
-}
-void processing() {
-    /* Send output to processing application */
-    xbee.printf("Processing,%5.2f,%5.2f,%5.2f,%5.2f\n",Kp,Ki,Kd,targetAngle);
-}
 void PID(double restAngle, double offset) {
-    if (steerForward)
+    if (steerForward) {
+        offset += (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
         restAngle -= offset;
-    else if (steerBackward)
+        //xbee.printf("Forward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
+    } else if (steerBackward) {
+        offset -= (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
         restAngle += offset;
-    
+        //xbee.printf("Backward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
+    } else if (steerStop) {
+        long positionError = wheelPosition - targetPosition;
+        if(abs(positionError) > 500) {
+            restAngle -= (double)positionError/positionScale;
+            restAngle -= (double)wheelVelocity/velocityScale;
+        } else
+            restAngle -= (double)wheelVelocity/(velocityScale*2);
+        
+        if (restAngle < 80) // Limit rest Angle
+            restAngle = 80;
+        else if (restAngle > 100)
+            restAngle = 100;
+        //xbee.printf("restAngle: %f\t WheelVelocity: %i positionError: %i\n",restAngle,wheelVelocity,positionError);
+    }
     double error = (restAngle - pitch)/100;
     double pTerm = Kp * error;
     iTerm += Ki * error;
@@ -197,6 +143,94 @@ void PID(double restAngle, double offset) {
     else
         move(right, backward, PIDRight * -1);
 }
+void receivePS3() {
+    char input[16]; // The serial buffer is only 16 characters
+    int i = 0;
+    while (1) {
+        input[i] = ps3.getc();
+        if (input[i] == ';' || i == 15) // keep reading until it reads a semicolon or it exceeds the serial buffer
+            break;
+        i++;
+    }
+    //debug.printf("Input: %s\n",input);
+    
+    // Set all false
+    steerForward = false;
+    steerBackward = false;
+    steerStop = false;
+    steerLeft = false;
+    steerRotateLeft = false;
+    steerRight = false;
+    steerRotateRight = false;
+    
+    /* For remote control */
+    if (input[0] == 'F') { // Forward
+        strtok(input, ","); // Ignore 'F'
+        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        //xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
+        steerForward = true;
+    } else if (input[0] == 'B') { // Backward
+        strtok(input, ","); // Ignore 'B'
+        targetOffset = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        //xbee.printf("%f\n",targetOffset); // Print targetOffset for debugging
+        steerBackward = true;
+    } else if (input[0] == 'L') { // Left
+        if (input[1] == 'R') // Left Rotate
+            steerRotateLeft = true;
+        else
+            steerLeft = true;
+    } else if (input[0] == 'R') { // Right
+        if (input[1] == 'R') // Right Rotate
+            steerRotateRight = true;
+        else
+            steerRight = true;
+    } else if (input[0] == 'S') { // Stop
+        steerStop = true;
+        targetPosition = wheelPosition;
+    }
+    
+    else if (input[0] == 'T') { // Set the target angle
+        strtok(input, ","); // Ignore 'T'
+        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+        xbee.printf("%f\n",targetAngle); // Print targetAngle for debugging
+    } else if (input[0] == 'A') { // Abort
+        stopAndReset();
+        while (ps3.getc() != 'C'); // Wait until continue is send
+    }
+}
+void receiveXbee() {
+    char input[16]; // The serial buffer is only 16 characters
+    int i = 0;
+    while (1) {
+        input[i] = xbee.getc();
+        if (input[i] == ';' || i == 15) // keep reading until it reads a semicolon or it exceeds the serial buffer
+            break;
+        i++;
+    }
+    //debug.printf("Input: %s\n",input);
+    
+    if (input[0] == 'T') { // Set the target angle
+        strtok(input, ","); // Ignore 'T'
+        targetAngle = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'P') {
+        strtok(input, ",");//Ignore 'P'
+        Kp = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'I') {
+        strtok(input, ",");//Ignore 'I'
+        Ki = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'D') {
+        strtok(input, ",");//Ignore 'D'
+        Kd = atof(strtok(NULL, ";")); // read until the end and then convert from string to double
+    } else if (input[0] == 'A') { // Abort
+        stopAndReset();
+        while (xbee.getc() != 'C'); // Wait until continue is send
+    } else if (input[0] == 'G') // The processing application sends this at startup
+        processing(); // Send output to processing application
+}
+void processing() {
+    /* Send output to processing application */
+    xbee.printf("Processing,%5.2f,%5.2f,%5.2f,%5.2f\n",Kp,Ki,Kd,targetAngle);
+}
 void stopAndReset() {
     stop(both);
     lastError = 0;
@@ -205,6 +239,7 @@ void stopAndReset() {
 double kalman(double newAngle, double newRate, double dtime) {
     // KasBot V2  -  Kalman filter module - http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1284738418 - http://www.x-firm.com/?page_id=145
     // with slightly modifications by Kristian Lauszus
+    // See http://academic.csuohio.edu/simond/courses/eec644/kalman.pdf and http://academic.csuohio.edu/simond/courses/eec644/kalman.pdfhttp://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf for more information
     dt = dtime / 1000000; // Convert from microseconds to seconds
     
     // Discrete Kalman filter time update equations - Time Update ("Predict")
@@ -237,16 +272,16 @@ double kalman(double newAngle, double newRate, double dtime) {
     return angle;
 }
 double getGyroYrate() {
-    // (gyroAdc-gyroZero)/Sensitivity (In quids) - Sensitivity = 0.00333/3.3*4095=4.132227273
-    double gyroRate = -(((gyroY.read()*4095) - zeroValues[0]) / 4.132227273);
+    // (gyroAdc-gyroZero)/Sensitivity (In quids) - Sensitivity = 0.00333/3.3=0.001009091
+    double gyroRate = -((gyroY.read() - zeroValues[0]) / 0.001009091);
     return gyroRate;
 }
 double getAccY() {
-    // (accAdc-accZero)/Sensitivity (In quids) - Sensitivity = 0.33/3.3*4095=409.5
-    double accXval = ((accX.read()*4095) - zeroValues[1]) / 409.5;
-    double accYval = ((accY.read()*4095) - zeroValues[2]) / 409.5;
+    // (accAdc-accZero)/Sensitivity (In quids) - Sensitivity = 0.33/3.3=0.1    
+    double accXval = (accX.read() - zeroValues[1]) / 0.1;
+    double accYval = (accY.read() - zeroValues[2]) / 0.1;
     accYval--;//-1g when lying down
-    double accZval = ((accZ.read()*4095) - zeroValues[3]) / 409.5;
+    double accZval = (accZ.read() - zeroValues[3]) / 0.1;
     
     double R = sqrt(pow(accXval, 2) + pow(accYval, 2) + pow(accZval, 2)); // Calculate the force vector
     double angleY = acos(accYval / R) * RAD_TO_DEG;
@@ -254,17 +289,14 @@ double getAccY() {
     return angleY;
 }
 void calibrateSensors() {
-    onboardLED1 = 1;
-    onboardLED2 = 1;
-    onboardLED3 = 1;
-    onboardLED4 = 1;
+    LEDs = 0xF; // Turn all onboard LEDs on
     
-    double adc[4];
+    double adc[4] = {0,0,0,0};
     for (uint8_t i = 0; i < 100; i++) { // Take the average of 100 readings
-        adc[0] += gyroY.read()*4095;
-        adc[1] += accX.read()*4095;
-        adc[2] += accY.read()*4095;
-        adc[3] += accZ.read()*4095;
+        adc[0] += gyroY.read();
+        adc[1] += accX.read();
+        adc[2] += accY.read();
+        adc[3] += accZ.read();
         wait_ms(10);
     }
     zeroValues[0] = adc[0] / 100; // Gyro X-axis
@@ -272,10 +304,7 @@ void calibrateSensors() {
     zeroValues[2] = adc[2] / 100; // Accelerometer Y-axis
     zeroValues[3] = adc[3] / 100; // Accelerometer Z-axis
     
-    onboardLED1 = 0;
-    onboardLED2 = 0;
-    onboardLED3 = 0;
-    onboardLED4 = 0;
+    LEDs = 0x0; // Turn all onboard LEDs off
 }
 void move(Motor motor, Direction direction, float speed) { // speed is a value in percentage (0.0f to 1.0f)
     if (motor == right) {

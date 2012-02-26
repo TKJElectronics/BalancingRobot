@@ -1,14 +1,9 @@
 #ifndef _balancingrobot_h_
 #define _balancingrobot_h_
 
-#include "mbed.h"
-
 #define RAD_TO_DEG 57.295779513082320876798154814105 // 180/pi
 
-DigitalOut onboardLED1(LED1);
-DigitalOut onboardLED2(LED2);
-DigitalOut onboardLED3(LED3);
-DigitalOut onboardLED4(LED4);
+BusOut LEDs(LED1, LED2, LED3, LED4);
 
 /* Left motor */
 DigitalOut leftA(p21);
@@ -53,7 +48,6 @@ double Kp = 11;
 double Ki = 2;
 double Kd = 12;
 double targetAngle = 90;
-double lastTargetAngle;
 
 double lastError;
 double iTerm;
@@ -78,13 +72,21 @@ enum Direction {
 
 bool steerForward;
 bool steerBackward;
+bool steerStop = true; // Stop by default
 bool steerLeft;
 bool steerRotateLeft;
 bool steerRight;
 bool steerRotateRight;
 
 double targetOffset = 0;
-double lastTargetOffset;
+
+uint8_t loopCounter = 0; // Used for wheel velocity
+long wheelPosition;
+long lastWheelPosition;
+long targetPosition;
+long wheelVelocity;
+double positionScale = 1000; // one resolution is 464 pulses
+double velocityScale = 40;
 
 void calibrateSensors();
 void PID(double restAngle, double offset);
