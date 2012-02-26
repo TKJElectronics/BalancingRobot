@@ -11,8 +11,8 @@
 #include "BalancingRobot.h"
 #include "Encoder.h"
 
-/* Serial communication */
-Serial xbee(p13,p14); // For wireless debugging
+/* Setup serial communication */
+Serial xbee(p13,p14); // For wireless debugging and setting PID constants
 Serial ps3(p9,p10); // For remote control
 Serial debug(USBTX, USBRX); // USB
 
@@ -20,57 +20,70 @@ Serial debug(USBTX, USBRX); // USB
 Encoder leftEncoder(p29,p30);
 Encoder rightEncoder(p28,p27);
 
-/* Timer instance */
+/* Setup timer instance */
 Timer t;
 
 int main() {
+    /* Set baudrate */
     xbee.baud(115200);
     ps3.baud(115200);
     debug.baud(115200);
     
+    /* Set PWM frequency */
     leftPWM.period(0.00005); // The motor driver can handle a pwm frequency up to 20kHz (1/20000=0.00005)
     rightPWM.period(0.00005);
     
-    calibrateSensors(); // Calibrate the gyro and accelerometer relative to ground
+    /* Calibrate the gyro and accelerometer relative to ground */
+    calibrateSensors();
     
     xbee.printf("Initialized\n");
     processing(); // Send output to processing application
     
-    // Start timing
+    /* Setup timing */
     t.start();
     loopStartTime = t.read_us();
     timer = loopStartTime;
     
     while (1) {
-        // See my guide for more info about calculation the angles and the Kalman filter: http://arduino.cc/forum/index.php/topic,58048.0.html
+        /* Calculate pitch */
         accYangle = getAccY();
         gyroYrate = getGyroYrate();
         
+        // See my guide for more info about calculation the angles and the Kalman filter: http://arduino.cc/forum/index.php/topic,58048.0.html
         pitch = kalman(accYangle, gyroYrate, t.read_us() - timer); // calculate the angle using a Kalman filter
         timer = t.read_us();
         
         //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
         
-        if (ps3.readable()) // Check if there's any incoming data
-            receivePS3();
-        if (xbee.readable()) // For setting the PID values
-            receiveXbee();
-        
+        /* Drive motors */
         if (pitch < 70 || pitch > 110) // Stop if falling or laying down
             stopAndReset();
         else
             PID(targetAngle,targetOffset);
         
+        /* Update wheel velocity every 100ms */
         loopCounter++;
-        if (loopCounter == 10) { // Update wheel velocity every 100ms
+        if (loopCounter == 10) {
             loopCounter = 0;
             wheelPosition = leftEncoder.read() + rightEncoder.read();
             wheelVelocity = wheelPosition - lastWheelPosition;
             lastWheelPosition = wheelPosition;
             //xbee.printf("WheelVelocity: %i\n",wheelVelocity);
+            
+            if (abs(wheelVelocity) <= 20 && !stopped) { // Set new targetPosition if breaking
+                targetPosition = wheelPosition;
+                stopped = true;
+                //xbee.printf("Stopped\n");
+            }
         }
         
-        /* Used a time fixed loop */
+        /* Check for incoming serial data */
+        if (ps3.readable()) // Check if there's any incoming data
+            receivePS3();
+        if (xbee.readable()) // For setting the PID values
+            receiveXbee();
+        
+        /* Use a time fixed loop */
         lastLoopUsefulTime = t.read_us() - loopStartTime;
         if (lastLoopUsefulTime < STD_LOOP_TIME)
             wait_us(STD_LOOP_TIME - lastLoopUsefulTime);
@@ -81,6 +94,7 @@ int main() {
     }
 }
 void PID(double restAngle, double offset) {
+    /* Steer robot */
     if (steerForward) {
         offset += (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
         restAngle -= offset;
@@ -89,7 +103,9 @@ void PID(double restAngle, double offset) {
         offset -= (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
         restAngle += offset;
         //xbee.printf("Backward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
-    } else if (steerStop) {
+    }
+    /* Break */
+    else if (steerStop) {
         long positionError = wheelPosition - targetPosition;
         if (abs(positionError) > zoneA) // Inside zone A
             restAngle -= (double)positionError/positionScaleA;
@@ -97,6 +113,7 @@ void PID(double restAngle, double offset) {
             restAngle -= (double)positionError/positionScaleB;
         else // Inside zone C
             restAngle -= (double)positionError/positionScaleC;
+        
         restAngle -= (double)wheelVelocity/velocityScale;
         
         if (restAngle < 80) // Limit rest Angle
@@ -105,6 +122,7 @@ void PID(double restAngle, double offset) {
             restAngle = 100;
         //xbee.printf("restAngle: %f\t WheelVelocity: %i positionError: %i\n",restAngle,wheelVelocity,positionError);
     }
+    /* Update PID values */
     double error = (restAngle - pitch)/100;
     double pTerm = Kp * error;
     iTerm += Ki * error;
@@ -115,32 +133,33 @@ void PID(double restAngle, double offset) {
     
     //debug.printf("Pitch: %5.2f\tPIDValue:  %5.2f\tpTerm: %5.2f\tiTerm: %5.2f\tdTerm: %5.2f\tKp: %5.2f\tKi: %5.2f\tKd: %5.2f\n",pitch,PIDValue,pTerm,iTerm,dTerm,Kp,Ki,Kd);
     
+    /* Steer robot sideways */
     double PIDLeft;
     double PIDRight;
     if (steerLeft) {
-        PIDLeft = PIDValue-(0.1);
-        PIDRight = PIDValue+(0.1);
+        PIDLeft = PIDValue-turnSpeed;
+        PIDRight = PIDValue+turnSpeed;
     } else if (steerRotateLeft) {
-        PIDLeft = PIDValue-(0.2);
-        PIDRight = PIDValue+(0.2);
+        PIDLeft = PIDValue-rotateSpeed;
+        PIDRight = PIDValue+rotateSpeed;
     } else if (steerRight) {
-        PIDLeft = PIDValue-(-0.1);
-        PIDRight = PIDValue+(-0.1);
+        PIDLeft = PIDValue+turnSpeed;
+        PIDRight = PIDValue-turnSpeed;
     } else if (steerRotateRight) {
-        PIDLeft = PIDValue-(-0.2);
-        PIDRight = PIDValue+(-0.2);
+        PIDLeft = PIDValue+rotateSpeed;
+        PIDRight = PIDValue-rotateSpeed;
     } else {
         PIDLeft = PIDValue;
         PIDRight = PIDValue;
     }
     PIDLeft *= 0.9; // compensate for difference in the motors
     
-    //Set PWM Values
+    /* Set PWM Values */
     if (PIDLeft >= 0)
         move(left, forward, PIDLeft);
     else
         move(left, backward, PIDLeft * -1);
-    if  (PIDRight >= 0)
+    if (PIDRight >= 0)
         move(right, forward, PIDRight);
     else
         move(right, backward, PIDRight * -1);
@@ -188,6 +207,7 @@ void receivePS3() {
             steerRight = true;
     } else if (input[0] == 'S') { // Stop
         steerStop = true;
+        stopped = false;
         targetPosition = wheelPosition;
     }
     
@@ -309,7 +329,7 @@ void calibrateSensors() {
     LEDs = 0x0; // Turn all onboard LEDs off
 }
 void move(Motor motor, Direction direction, float speed) { // speed is a value in percentage (0.0f to 1.0f)
-    if (motor == right) {
+    if (motor == left) {
         leftPWM = speed;
         if (direction == forward) {
             leftA = 0;
@@ -318,7 +338,7 @@ void move(Motor motor, Direction direction, float speed) { // speed is a value i
             leftA = 1;
             leftB = 0;
         }
-    } else if (motor == left) {
+    } else if (motor == right) {
         rightPWM = speed;
         if (direction == forward) {
             rightA = 0;

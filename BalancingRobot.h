@@ -42,8 +42,7 @@ double accYangle;
 double gyroYrate;
 double pitch;
 
-/* PID values */
-// Motors
+/* PID variables */
 double Kp = 11;
 double Ki = 2;
 double Kd = 12;
@@ -78,15 +77,20 @@ bool steerRotateLeft;
 bool steerRight;
 bool steerRotateRight;
 
+bool stopped;
+
+const double turnSpeed = 0.1;
+const double rotateSpeed = 0.2;
+
 double targetOffset = 0;
 
 uint8_t loopCounter = 0; // Used for wheel velocity
 long wheelPosition;
 long lastWheelPosition;
-long targetPosition;
 long wheelVelocity;
-int zoneA = 1000;
-int zoneB = 500;
+long targetPosition;
+int zoneA = 2000;
+int zoneB = 1000;
 double positionScaleA = 250; // one resolution is 464 pulses
 double positionScaleB = 500; 
 double positionScaleC = 1000;
@@ -103,6 +107,5 @@ void processing();
 void receivePS3();
 void receiveXbee();
 void stopAndReset();
-void processing();
 
 #endif
