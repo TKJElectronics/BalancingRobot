@@ -9,13 +9,11 @@ BusOut LEDs(LED1, LED2, LED3, LED4);
 DigitalOut leftA(p21);
 DigitalOut leftB(p22);
 PwmOut leftPWM(p23);
-//AnalogIn leftCurrentSense(p15); // Not used
 
 /* Right motor */
 DigitalOut rightA(p24);
 DigitalOut rightB(p25);
 PwmOut rightPWM(p26);
-//AnalogIn rightCurrentSense(p16); // Not used
 
 /* IMU */
 AnalogIn gyroY(p17);
@@ -23,13 +21,17 @@ AnalogIn accX(p18);
 AnalogIn accY(p19);
 AnalogIn accZ(p20);
 
+/* Battery voltage */
+AnalogIn batteryVoltage(p15); // The analog pin is connected to a 56k-10k voltage divider
+DigitalOut buzzer(p5); // Connected to a BC547 transistor - there is a protection diode at the buzzer 
+
 // Zero voltage values for the sensors - [0] = gyroY, [1] = accX, [2] = accY, [3] = accZ
 double zeroValues[4];
 
 /* Kalman filter variables and constants */
 const float Q_angle = 0.001; // Process noise covariance for the accelerometer - Sw
 const float Q_gyro = 0.003; // Process noise covariance for the gyro - Sw
-const float R_angle = 0.03; // Measurent noise covariance - Sv
+const float R_angle = 0.03; // Measurement noise covariance - Sv
 
 double angle = 180; // It starts at 180 degrees
 double bias = 0;
@@ -94,7 +96,8 @@ int zoneB = 1000;
 double positionScaleA = 250; // one resolution is 464 pulses
 double positionScaleB = 500; 
 double positionScaleC = 1000;
-double velocityScale = 40;
+double velocityScaleMove = 40;
+double velocityScaleStop = 40;
 
 void calibrateSensors();
 void PID(double restAngle, double offset);

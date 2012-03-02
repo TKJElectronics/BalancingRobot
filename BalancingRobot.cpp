@@ -56,15 +56,15 @@ int main() {
         //debug.printf("Pitch: %f, accYangle: %f\n",pitch,accYangle);
         
         /* Drive motors */
-        if (pitch < 70 || pitch > 110) // Stop if falling or laying down
+        if (pitch < 60 || pitch > 120) // Stop if falling or laying down
             stopAndReset();
         else
             PID(targetAngle,targetOffset);
         
         /* Update wheel velocity every 100ms */
         loopCounter++;
-        if (loopCounter == 10) {
-            loopCounter = 0;
+        if (loopCounter%10 == 0) { // If remainder is equal 0, it must be 10,20,30 etc.
+            //xbee.printf("Wheel - timer: %i\n",t.read_ms());
             wheelPosition = leftEncoder.read() + rightEncoder.read();
             wheelVelocity = wheelPosition - lastWheelPosition;
             lastWheelPosition = wheelPosition;
@@ -83,6 +83,16 @@ int main() {
         if (xbee.readable()) // For setting the PID values
             receiveXbee();
         
+        /* Read battery voltage every 1s */
+        if (loopCounter == 100) {
+            loopCounter = 0; // Reset loop counter
+            double analogVoltage = batteryVoltage.read()/1*3.3; // Convert to voltage
+            analogVoltage *= 6.6 // The analog pin is connected to a 56k-10k voltage divider
+            xbee.printf("analogVoltage: %f - timer: %i\n",analogVoltage,t.read_ms());
+            if (analogVoltage < 7.92 && pitch > 60 && pitch < 120) // Set buzzer on, if voltage gets critical low
+                buzzer = 1; // The mbed resets at aproximatly 1V           
+        }
+        
         /* Use a time fixed loop */
         lastLoopUsefulTime = t.read_us() - loopStartTime;
         if (lastLoopUsefulTime < STD_LOOP_TIME)
@@ -96,11 +106,11 @@ int main() {
 void PID(double restAngle, double offset) {
     /* Steer robot */
     if (steerForward) {
-        offset += (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
+        offset += (double)wheelVelocity/velocityScaleMove; // Scale down offset at high speed and scale up when reversing
         restAngle -= offset;
         //xbee.printf("Forward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
     } else if (steerBackward) {
-        offset -= (double)wheelVelocity/velocityScale; // Scale down offset at high speed and scale up when reversing
+        offset -= (double)wheelVelocity/velocityScaleMove; // Scale down offset at high speed and scale up when reversing
         restAngle += offset;
         //xbee.printf("Backward offset: %f\t WheelVelocity: %i\n",offset,wheelVelocity);
     }
@@ -114,7 +124,7 @@ void PID(double restAngle, double offset) {
         else // Inside zone C
             restAngle -= (double)positionError/positionScaleC;
         
-        restAngle -= (double)wheelVelocity/velocityScale;
+        restAngle -= (double)wheelVelocity/velocityScaleStop;
         
         if (restAngle < 80) // Limit rest Angle
             restAngle = 80;
@@ -152,7 +162,7 @@ void PID(double restAngle, double offset) {
         PIDLeft = PIDValue;
         PIDRight = PIDValue;
     }
-    PIDLeft *= 0.9; // compensate for difference in the motors
+    PIDLeft *= 0.95; // compensate for difference in the motors
     
     /* Set PWM Values */
     if (PIDLeft >= 0)
@@ -257,11 +267,13 @@ void stopAndReset() {
     stop(both);
     lastError = 0;
     iTerm = 0;
+    targetPosition = wheelPosition;
+    buzzer= 0;
 }
 double kalman(double newAngle, double newRate, double dtime) {
     // KasBot V2  -  Kalman filter module - http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1284738418 - http://www.x-firm.com/?page_id=145
     // with slightly modifications by Kristian Lauszus
-    // See http://academic.csuohio.edu/simond/courses/eec644/kalman.pdf and http://academic.csuohio.edu/simond/courses/eec644/kalman.pdfhttp://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf for more information
+    // See http://academic.csuohio.edu/simond/courses/eec644/kalman.pdf and http://www.cs.unc.edu/~welch/media/pdf/kalman_intro.pdf for more information
     dt = dtime / 1000000; // Convert from microseconds to seconds
     
     // Discrete Kalman filter time update equations - Time Update ("Predict")
