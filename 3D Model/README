@@ -1,0 +1,11 @@
+The code is released under the GNU General Public License.
+
+This is the 3D model of my robot made in Autodesk Inventor 2012. See the folder "Rendered images" for images of the model.
+
+The Arduino board were made by the user "wam" at the Arduino forum: http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1288144315/all
+
+The mbed board were made by Hugo Stoutjesdijk.
+
+And the XBee module were made by Russell Donovan and downloaded from: http://grabcad.com/library/xbee-module
+
+For more information see my blog post at http://blog.tkjelectronics.dk/2012/02/the-balancing-robot/ or send me an email at kristianl at tkjelectronics dot dk.
