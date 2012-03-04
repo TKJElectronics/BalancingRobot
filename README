@@ -11,3 +11,5 @@ To steer the robot, I use an Arduino with a USB Host Shield on top (http://www.c
 For information about the hardware, see the wiki: https://github.com/TKJElectronics/BalancingRobot/wiki/Hardware.
 
 For more information see my blog post at http://blog.tkjelectronics.dk/2012/03/the-balancing-robot/ or send me an email at kristianl at tkjelectronics dot dk.
+
+Also check out the youtube video of it in action: http://www.youtube.com/watch?v=N28C_JqVhGU
