@@ -87,7 +87,7 @@ int main() {
         if (loopCounter == 100) {
             loopCounter = 0; // Reset loop counter
             double analogVoltage = batteryVoltage.read()/1*3.3; // Convert to voltage
-            analogVoltage *= 6.6 // The analog pin is connected to a 56k-10k voltage divider
+            analogVoltage *= 6.6; // The analog pin is connected to a 56k-10k voltage divider
             xbee.printf("analogVoltage: %f - timer: %i\n",analogVoltage,t.read_ms());
             if (analogVoltage < 7.92 && pitch > 60 && pitch < 120) // Set buzzer on, if voltage gets critical low
                 buzzer = 1; // The mbed resets at aproximatly 1V           

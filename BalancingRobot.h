@@ -45,9 +45,9 @@ double gyroYrate;
 double pitch;
 
 /* PID variables */
-double Kp = 11;
-double Ki = 2;
-double Kd = 12;
+double Kp = 8; //11 - 7
+double Ki = 2; //2
+double Kd = 9; //12
 double targetAngle = 90;
 
 double lastError;
@@ -91,13 +91,13 @@ long wheelPosition;
 long lastWheelPosition;
 long wheelVelocity;
 long targetPosition;
-int zoneA = 2000;
-int zoneB = 1000;
+int zoneA = 4000; // 2000
+int zoneB = 2000; // 1000
 double positionScaleA = 250; // one resolution is 464 pulses
 double positionScaleB = 500; 
 double positionScaleC = 1000;
 double velocityScaleMove = 40;
-double velocityScaleStop = 40;
+double velocityScaleStop = 30;//30 - 40 - 60
 
 void calibrateSensors();
 void PID(double restAngle, double offset);
