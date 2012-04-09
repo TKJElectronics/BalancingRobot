@@ -90,7 +90,7 @@ int main() {
             analogVoltage *= 6.6; // The analog pin is connected to a 56k-10k voltage divider
             xbee.printf("analogVoltage: %f - timer: %i\n",analogVoltage,t.read_ms());
             if (analogVoltage < 9 && pitch > 60 && pitch < 120) // Set buzzer on, if voltage gets critical low
-                buzzer = 1; // The mbed resets at aproximatly 1V           
+                buzzer = 1; // The mbed resets at aproximatly 8.5V
         }
         
         /* Use a time fixed loop */
@@ -268,7 +268,7 @@ void stopAndReset() {
     lastError = 0;
     iTerm = 0;
     targetPosition = wheelPosition;
-    buzzer= 0;
+    buzzer = 0;
 }
 double kalman(double newAngle, double newRate, double dtime) {
     // KasBot V2  -  Kalman filter module - http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1284738418 - http://www.x-firm.com/?page_id=145

@@ -86,7 +86,7 @@ const double rotateSpeed = 0.2;
 
 double targetOffset = 0;
 
-uint8_t loopCounter = 0; // Used for wheel velocity
+uint8_t loopCounter = 0; // Used for wheel velocity and battery voltage
 long wheelPosition;
 long lastWheelPosition;
 long wheelVelocity;
