@@ -317,7 +317,7 @@ double getAccY() {
     accYval--;//-1g when lying down
     double accZval = (accZ.read() - zeroValues[3]) / 0.1;
     
-    double R = sqrt(pow(accXval, 2) + pow(accYval, 2) + pow(accZval, 2)); // Calculate the force vector
+    double R = sqrt(pow(accXval, 2) + pow(accYval, 2) + pow(accZval, 2)); // Calculate the length of force vector
     double angleY = acos(accYval / R) * RAD_TO_DEG;
     
     return angleY;

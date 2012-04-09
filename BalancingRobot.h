@@ -46,7 +46,7 @@ double pitch;
 
 /* PID variables */
 double Kp = 8; //11 - 7
-double Ki = 2; //2
+double Ki = 2; //1
 double Kd = 9; //12
 double targetAngle = 90;
 
