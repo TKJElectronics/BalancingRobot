@@ -54,7 +54,7 @@ double lastError;
 double iTerm;
 
 /* Used for timing */
-long timer;
+unsigned long timer;
 
 const long STD_LOOP_TIME = 10*1000; // Fixed time loop of 10 milliseconds
 long lastLoopTime = STD_LOOP_TIME;
