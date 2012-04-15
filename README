@@ -1,6 +1,7 @@
 The code is released under the GNU General Public License.
+Developed by Kristian Lauszus
 
-This is the code for my balancing robot/segway. It's made for the mbed board, but can easily be ported to other microcontrollers - like the Arduino.
+This is the code for my balancing robot/segway. It's made for the mbed board, but can easily be ported to other microcontrollers like the Arduino - see the Arduino version of the code: https://github.com/TKJElectronics/BalancingRobotArduino
 
 The code is also published on the mbed site: http://mbed.org/users/Lauszus/programs/BalancingRobotPS3
 
